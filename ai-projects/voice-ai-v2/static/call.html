@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Voice AI Call</title>
+
+  <!-- ✅ Local Twilio SDK -->
+  <script src="/static/twilio.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+    }
+
+    button {
+      padding: 12px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #log {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>📞 Voice AI Call</h2>
+
+<button onclick="startCall()">Start Call</button>
+<button onclick="endCall()">End Call</button>
+
+<p id="log">Status: Idle</p>
+
+<script>
+let device = null;
+let currentCall = null;
+
+const BASE_URL = "http://127.0.0.1:8000";
+
+// 🚀 START CALL
+async function startCall() {
+  try {
+    // 🔥 STEP 1: Force microphone permission
+    log("Requesting microphone access...");
+    await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    log("Fetching token...");
+
+    const res = await fetch(`${BASE_URL}/token`);
+    const data = await res.json();
+
+    log("Initializing device...");
+
+    // 🔥 STEP 2: Proper Twilio device config
+    device = new Twilio.Device(data.token, {
+      codecPreferences: ["opus", "pcmu"],
+      fakeLocalDTMF: true,
+      enableRingingState: true
+    });
+
+    // ✅ Device ready
+    device.on("registered", () => {
+      log("✅ Device ready");
+    });
+
+    // ❌ Device error
+    device.on("error", (e) => {
+      log("❌ Device Error: " + e.message);
+    });
+
+    log("Connecting call...");
+
+    // 🔥 Store active call
+    currentCall = await device.connect();
+
+    // ✅ Call connected
+    currentCall.on("accept", () => {
+      log("📞 Call connected");
+      console.log("Call accepted");
+    });
+
+    // 🔌 Call ended
+    currentCall.on("disconnect", () => {
+      log("🔌 Call disconnected");
+      console.log("Call disconnected");
+      currentCall = null;
+    });
+
+    // ❌ Call error
+    currentCall.on("error", (e) => {
+      log("❌ Call Error: " + e.message);
+      console.error(e);
+    });
+
+  } catch (err) {
+    log("❌ Error: " + err.message);
+    console.error(err);
+  }
+}
+
+
+// 🛑 END CALL
+function endCall() {
+  if (currentCall) {
+    log("Ending call...");
+    currentCall.disconnect();
+    currentCall = null;
+  } else {
+    log("No active call");
+  }
+}
+
+
+// 📢 LOG HELPER
+function log(msg) {
+  console.log(msg);
+  document.getElementById("log").innerText = msg;
+}
+</script>
+
+</body>
+</html>

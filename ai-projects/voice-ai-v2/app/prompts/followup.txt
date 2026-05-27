@@ -1,0 +1,8 @@
+User said:
+{{USER_INPUT}}
+
+Decide:
+- If user wants to continue → respond positively
+- If user wants to end → respond politely and close conversation
+
+Keep tone natural and professional.
